@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Recommender</title>
+    <!-- Tailwind CSS CDN for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and overall layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 15px; /* Rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #e2e8f0; /* Light border */
+        }
+        h1 {
+            color: #2d3748; /* Darker text for heading */
+            margin-bottom: 25px;
+            font-size: 2.25rem; /* Larger font size */
+            font-weight: 700; /* Bold */
+        }
+        input[type="text"] {
+            width: calc(100% - 20px); /* Adjust width for padding */
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border: 2px solid #cbd5e0; /* Light gray border */
+            border-radius: 10px; /* Rounded input field */
+            font-size: 1rem;
+            color: #4a5568;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #6366f1; /* Purple focus border */
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); /* Soft focus shadow */
+        }
+        button {
+            background-image: linear-gradient(to right, #6366f1, #8b5cf6); /* Purple gradient */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+            font-weight: 600;
+        }
+        button:hover {
+            transform: translateY(-2px); /* Slight lift on hover */
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+        #recommendations {
+            margin-top: 30px;
+            text-align: left;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 25px;
+        }
+        #recommendations h2 {
+            color: #2d3748;
+            font-size: 1.75rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        #recommendations ul {
+            list-style: none;
+            padding: 0;
+        }
+        #recommendations li {
+            background-color: #f7fafc; /* Lighter background for list items */
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.05rem;
+            color: #4a5568;
+        }
+        #recommendations li strong {
+            color: #3182ce; /* Blue for movie title */
+        }
+        #recommendations li span {
+            font-size: 0.9rem;
+            color: #718096; /* Gray for genre */
+        }
+        .no-results {
+            color: #e53e3e; /* Red for no results message */
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Movie Recommender</h1>
+        <p class="text-gray-600 mb-6">Enter a movie genre (e.g., Action, Comedy, Sci-Fi) or a movie title to get recommendations!</p>
+        <input type="text" id="userInput" placeholder="Enter genre or movie title...">
+        <button onclick="getRecommendations()">Get Recommendations</button>
+
+        <div id="recommendations">
+            <h2>Recommended Movies:</h2>
+            <ul id="recommendationList">
+                <!-- Recommendations will be displayed here -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Define a simple dataset of movies with genres
+        const movies = [
+            { title: "The Dark Knight", genre: "Action, Crime, Drama" },
+            { title: "Inception", genre: "Action, Adventure, Sci-Fi" },
+            { title: "Pulp Fiction", genre: "Crime, Drama" },
+            { title: "Forrest Gump", genre: "Drama, Romance" },
+            { title: "The Matrix", genre: "Action, Sci-Fi" },
+            { title: "Interstellar", genre: "Adventure, Drama, Sci-Fi" },
+            { title: "Spirited Away", genre: "Animation, Adventure, Family" },
+            { title: "Parasite", genre: "Comedy, Drama, Thriller" },
+            { title: "Arrival", genre: "Drama, Sci-Fi" },
+            { title: "Coco", genre: "Animation, Adventure, Family" },
+            { title: "Avengers: Endgame", genre: "Action, Adventure, Drama" },
+            { title: "La La Land", genre: "Comedy, Drama, Music" },
+            { title: "Whiplash", genre: "Drama, Music" },
+            { title: "Blade Runner 2049", genre: "Action, Drama, Mystery" },
+            { title: "Joker", genre: "Crime, Drama, Thriller" },
+            { title: "Spider-Man: Into the Spider-Verse", genre: "Animation, Action, Adventure" },
+            { title: "Dune", genre: "Action, Adventure, Drama" }
+        ];
+
+        /**
+         * Function to get movie recommendations based on user input.
+         * It checks if the input matches any genre or movie title in the dataset.
+         */
+        function getRecommendations() {
+            const userInput = document.getElementById('userInput').value.toLowerCase().trim();
+            const recommendationList = document.getElementById('recommendationList');
+            recommendationList.innerHTML = ''; // Clear previous recommendations
+
+            if (!userInput) {
+                recommendationList.innerHTML = '<li class="no-results">Please enter a genre or movie title.</li>';
+                return;
+            }
+
+            const recommended = new Set(); // Use a Set to store unique movie titles
+
+            // First, try to find exact genre matches or partial movie title matches
+            movies.forEach(movie => {
+                const movieGenres = movie.genre.toLowerCase().split(', ').map(g => g.trim());
+                const movieTitle = movie.title.toLowerCase();
+
+                // Check if user input is a genre
+                if (movieGenres.includes(userInput)) {
+                    recommended.add(movie);
+                }
+                // Check if user input is part of a movie title
+                if (movieTitle.includes(userInput)) {
+                    recommended.add(movie);
+                }
+            });
+
+            // If no direct matches, try to find movies with similar genres
+            if (recommended.size === 0) {
+                movies.forEach(movie => {
+                    const movieGenres = movie.genre.toLowerCase().split(', ').map(g => g.trim());
+                    const inputGenres = userInput.split(', ').map(g => g.trim());
+
+                    // Check for any overlapping genres
+                    const hasOverlap = inputGenres.some(inputG => movieGenres.includes(inputG));
+                    if (hasOverlap) {
+                        recommended.add(movie);
+                    }
+                });
+            }
+
+            if (recommended.size > 0) {
+                // Convert Set to Array and sort alphabetically by title
+                Array.from(recommended).sort((a, b) => a.title.localeCompare(b.title)).forEach(movie => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<strong>${movie.title}</strong> <span>(${movie.genre})</span>`;
+                    recommendationList.appendChild(listItem);
+                });
+            } else {
+                recommendationList.innerHTML = '<li class="no-results">No recommendations found for your input. Try another genre or movie!</li>';
+            }
+        }
+    </script>
+</body>
+</html>
